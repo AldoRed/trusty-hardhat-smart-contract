@@ -1,1 +1,1 @@
-# trusty-hardhat-smart-contract
+# Trusty hardhat smart contract
