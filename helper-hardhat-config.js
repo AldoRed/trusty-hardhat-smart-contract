@@ -6,7 +6,7 @@ const networkConfig = {
         jobId: "29fa9aa13bf1468788b7cc4a500a45b8",
         fundAmount: "1000000000000000000",
         automationUpdateInterval: "30",
-        initialSupply: "100000000000000000000000",
+        initialSupply: "100",
         trustCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "100000000000000000",
     },
@@ -18,7 +18,7 @@ const networkConfig = {
         fundAmount: "1000000000000000000",
         automationUpdateInterval: "30",
         ethUsdPriceFeed: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-        initialSupply: "100000000000000000000000",
+        initialSupply: "100",
         trustCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "100000000000000000",
     },
@@ -27,7 +27,7 @@ const networkConfig = {
         linkToken: "0x514910771af9ca656af840dff83e8264ecf986ca",
         fundAmount: "0",
         automationUpdateInterval: "30",
-        initialSuply: "100000000000000000000000",
+        initialSuply: "100",
     },
     11155111: {
         name: "sepolia",
@@ -42,7 +42,7 @@ const networkConfig = {
         fee: "100000000000000000",
         fundAmount: "10000000000000000000", // 10
         automationUpdateInterval: "30",
-        initialSuply: "100000000000000000000000",
+        initialSuply: "100",
     },
     137: {
         name: "polygon",
@@ -52,7 +52,7 @@ const networkConfig = {
         jobId: "12b86114fa9e46bab3ca436f88e1a912",
         fee: "100000000000000",
         fundAmount: "100000000000000",
-        initialSuply: "100000000000000000000000",
+        initialSuply: "100",
     },
     80002: {
         name: "amoy",
@@ -66,7 +66,7 @@ const networkConfig = {
         fee: "100000000000000000",
         fundAmount: "100000000000000000", // 0.1
         automationUpdateInterval: "30",
-        initialSuply: "100000000000000000000000",
+        initialSuply: "100",
     },
 }
 
