@@ -64,7 +64,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         uint256 _verificationFee
     ) ERC721("VerifierNFT", "VNFT") {
         i_trustyCoin = IERC20(trustyCoinAddress);
-        i_verificationFee = _verificationFee;
+        i_verificationFee = _verificationFee * 10 ** 18;
     }
 
     modifier onlyAuthorizedPartner() {
