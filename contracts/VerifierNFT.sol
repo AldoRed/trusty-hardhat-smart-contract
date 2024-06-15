@@ -25,11 +25,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev The contract uses the Chainlink Automation library to perform upkeeps
  */
 contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
-    // Import the Counters library
+    // Type declaration
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    // Type declaration
     struct VerificationRequest {
         address user;
         string tokenURI;
@@ -39,7 +38,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
     }
 
     // State variables
-    IERC20 private i_trustyCoin;
+    IERC20 private immutable i_trustyCoin;
     uint256 private immutable i_verificationFee;
 
     uint256 private constant TIME_LIMIT = 5 days;
@@ -59,14 +58,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         address indexed partner
     );
 
-    constructor(
-        address trustyCoinAddress,
-        uint256 _verificationFee
-    ) ERC721("VerifierNFT", "VNFT") {
-        i_trustyCoin = IERC20(trustyCoinAddress);
-        i_verificationFee = _verificationFee * 10 ** 18;
-    }
-
+    // Modifiers
     modifier onlyAuthorizedPartner() {
         require(
             s_authorizedPartners[msg.sender],
@@ -75,12 +67,60 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         _;
     }
 
+    // Constructor
+    constructor(
+        address trustyCoinAddress,
+        uint256 _verificationFee
+    ) ERC721("VerifierNFT", "VNFT") {
+        i_trustyCoin = IERC20(trustyCoinAddress);
+        i_verificationFee = _verificationFee * 10 ** 18;
+    }
+
     function addAuthorizedPartner(address partner) external onlyOwner {
         s_authorizedPartners[partner] = true;
     }
 
     function removeAuthorizedPartner(address partner) external onlyOwner {
         s_authorizedPartners[partner] = false;
+    }
+
+    function checkUpkeep(
+        bytes calldata
+    )
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        upkeepNeeded = false;
+        uint256[] memory pendingRequests = new uint256[](s_requestCounter);
+        uint256 pendingCount = 0;
+
+        for (uint256 i = 1; i <= s_requestCounter; i++) {
+            if (
+                !s_verificationRequests[i].completed &&
+                (block.timestamp >=
+                    s_verificationRequests[i].requestTime + TIME_LIMIT ||
+                    s_verificationRequests[i].authorizedPartnerValidated)
+            ) {
+                pendingRequests[pendingCount] = i;
+                pendingCount++;
+                upkeepNeeded = true;
+            }
+        }
+
+        performData = abi.encode(pendingRequests, pendingCount);
+    }
+
+    function performUpkeep(bytes calldata performData) external override {
+        (uint256[] memory pendingRequests, uint256 pendingCount) = abi.decode(
+            performData,
+            (uint256[], uint256)
+        );
+
+        for (uint256 i = 0; i < pendingCount; i++) {
+            completeVerification(pendingRequests[i]);
+        }
     }
 
     function requestVerification(string memory tokenURI) public {
@@ -130,45 +170,6 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         request.completed = true;
 
         emit VerificationCompleted(requestId, request.user, newItemId);
-    }
-
-    function checkUpkeep(
-        bytes calldata
-    )
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        upkeepNeeded = false;
-        uint256[] memory pendingRequests = new uint256[](s_requestCounter);
-        uint256 pendingCount = 0;
-
-        for (uint256 i = 1; i <= s_requestCounter; i++) {
-            if (
-                !s_verificationRequests[i].completed &&
-                (block.timestamp >=
-                    s_verificationRequests[i].requestTime + TIME_LIMIT ||
-                    s_verificationRequests[i].authorizedPartnerValidated)
-            ) {
-                pendingRequests[pendingCount] = i;
-                pendingCount++;
-                upkeepNeeded = true;
-            }
-        }
-
-        performData = abi.encode(pendingRequests, pendingCount);
-    }
-
-    function performUpkeep(bytes calldata performData) external override {
-        (uint256[] memory pendingRequests, uint256 pendingCount) = abi.decode(
-            performData,
-            (uint256[], uint256)
-        );
-
-        for (uint256 i = 0; i < pendingCount; i++) {
-            completeVerification(pendingRequests[i]);
-        }
     }
 
     //View/Pure functions
