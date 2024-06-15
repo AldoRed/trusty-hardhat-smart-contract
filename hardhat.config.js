@@ -1,5 +1,14 @@
 require("@nomicfoundation/hardhat-toolbox")
-require("./tasks")
+require("@nomicfoundation/hardhat-verify")
+require("hardhat-deploy")
+require("@nomicfoundation/hardhat-ethers")
+require("hardhat-deploy-ethers")
+
+require("@nomicfoundation/hardhat-chai-matchers")
+require("@nomicfoundation/hardhat-ethers")
+require("@typechain/hardhat")
+require("hardhat-gas-reporter")
+require("solidity-coverage")
 require("dotenv").config()
 
 const COMPILER_SETTINGS = {
@@ -19,8 +28,7 @@ const MAINNET_RPC_URL =
 const POLYGON_MAINNET_RPC_URL =
     process.env.POLYGON_MAINNET_RPC_URL || "https://polygon-mainnet.alchemyapi.io/v2/your-api-key"
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL
-const AMOY_RPC_URL =
-    process.env.AMOY_RPC_URL || "https://polygon-amoy.infura.io/v3/your-api-key"
+const AMOY_RPC_URL = process.env.AMOY_RPC_URL || "https://polygon-amoy.infura.io/v3/your-api-key"
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 // optional
 const MNEMONIC = process.env.MNEMONIC || "Your mnemonic"
@@ -128,6 +136,14 @@ module.exports = {
         tests: "./test",
         cache: "./build/cache",
         artifacts: "./build/artifacts",
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0,
+        },
+        player: {
+            default: 1,
+        },
     },
     mocha: {
         timeout: 300000, // 300 seconds max for running tests
