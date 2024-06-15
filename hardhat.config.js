@@ -141,8 +141,11 @@ module.exports = {
         deployer: {
             default: 0,
         },
-        player: {
+        user1: {
             default: 1,
+        },
+        user2: {
+            default: 2,
         },
     },
     mocha: {
