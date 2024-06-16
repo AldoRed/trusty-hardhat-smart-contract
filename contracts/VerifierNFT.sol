@@ -8,6 +8,8 @@
 //6. The contract checks if the request has been completed or if the time limit has been reached.
 //7. If the request is completed, the contract mints a new NFT and assigns it to the user.
 //8. If the request was verified by the authorized partner, the partner recieves 50% of the verificationFee.
+//9. If the request was not verified by the authorized partner, the contract owner recieves the full verificationFee.
+//10. If the request was not completed, the contract owner can reject the request and refund 50% of the verificationFee to the user.
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -191,6 +193,10 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
             i_trustyCoin.transfer(request.user, i_verificationFee / 2),
             "Token refund failed"
         );
+        require(
+            i_trustyCoin.transfer(owner(), i_verificationFee / 2),
+            "Token refund failed"
+        );
 
         emit VerificationRejected(requestId, request.user, msg.sender);
     }
@@ -221,6 +227,15 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
                     request.authorizedPartner,
                     i_verificationFee / 2
                 ),
+                "Payment failed"
+            );
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee / 2),
+                "Payment failed"
+            );
+        } else {
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee),
                 "Payment failed"
             );
         }
