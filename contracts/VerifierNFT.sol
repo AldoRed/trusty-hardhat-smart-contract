@@ -18,6 +18,9 @@ import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+error VerifierNFT__AlreadyUnauthorizedPartner();
+error VerifierNFT__AlreadyAuthorizedPartner();
+
 /**
  * @title The VerifierNFT contract
  * @author Aldo Munoz
@@ -77,10 +80,14 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
     }
 
     function addAuthorizedPartner(address partner) external onlyOwner {
+        if (s_authorizedPartners[partner])
+            revert VerifierNFT__AlreadyAuthorizedPartner();
         s_authorizedPartners[partner] = true;
     }
 
     function removeAuthorizedPartner(address partner) external onlyOwner {
+        if (!s_authorizedPartners[partner])
+            revert VerifierNFT__AlreadyUnauthorizedPartner();
         s_authorizedPartners[partner] = false;
     }
 
