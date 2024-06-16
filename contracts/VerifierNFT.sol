@@ -7,6 +7,7 @@
 //5. The contract emits the VerificationValidatedByPartner event.
 //6. The contract checks if the request has been completed or if the time limit has been reached.
 //7. If the request is completed, the contract mints a new NFT and assigns it to the user.
+//8. If the request was verified by the authorized partner, the partner recieves 50% of the verificationFee.
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -38,6 +39,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         uint256 requestTime;
         bool completed;
         bool authorizedPartnerValidated;
+        address authorizedPartner;
     }
 
     // State variables
@@ -130,7 +132,10 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         }
     }
 
-    function requestVerification(string memory tokenURI) public {
+    function requestVerification(
+        string memory tokenURI,
+        address authorizedPartner
+    ) public {
         require(
             i_trustyCoin.transferFrom(
                 msg.sender,
@@ -146,7 +151,8 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
             tokenURI: tokenURI,
             requestTime: block.timestamp,
             completed: false,
-            authorizedPartnerValidated: false
+            authorizedPartnerValidated: false,
+            authorizedPartner: authorizedPartner
         });
 
         emit VerificationRequested(s_requestCounter, msg.sender);
@@ -156,6 +162,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         VerificationRequest storage request = s_verificationRequests[requestId];
         require(!request.completed, "Verification already completed");
         request.authorizedPartnerValidated = true;
+        request.authorizedPartner = msg.sender;
 
         emit VerificationValidatedByPartner(requestId, msg.sender);
     }
@@ -177,6 +184,17 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         request.completed = true;
 
         emit VerificationCompleted(requestId, request.user, newItemId);
+
+        // Transfer tokens to the authorized partner if the verification was validated by a partner
+        if (request.authorizedPartnerValidated) {
+            require(
+                i_trustyCoin.transfer(
+                    request.authorizedPartner,
+                    i_verificationFee / 2
+                ),
+                "Payment failed"
+            );
+        }
     }
 
     //View/Pure functions
