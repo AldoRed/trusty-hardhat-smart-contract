@@ -38,6 +38,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         string tokenURI;
         uint256 requestTime;
         bool completed;
+        bool rejected;
         bool authorizedPartnerValidated;
         address authorizedPartner;
     }
@@ -60,6 +61,11 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
     );
     event VerificationValidatedByPartner(
         uint256 requestId,
+        address indexed partner
+    );
+    event VerificationRejected(
+        uint256 requestId,
+        address indexed user,
         address indexed partner
     );
 
@@ -108,6 +114,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         for (uint256 i = 1; i <= s_requestCounter; i++) {
             if (
                 !s_verificationRequests[i].completed &&
+                !s_verificationRequests[i].rejected &&
                 (block.timestamp >=
                     s_verificationRequests[i].requestTime + TIME_LIMIT ||
                     s_verificationRequests[i].authorizedPartnerValidated)
@@ -151,6 +158,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
             tokenURI: tokenURI,
             requestTime: block.timestamp,
             completed: false,
+            rejected: false,
             authorizedPartnerValidated: false,
             authorizedPartner: authorizedPartner
         });
@@ -167,9 +175,30 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         emit VerificationValidatedByPartner(requestId, msg.sender);
     }
 
+    function rejectVerification(uint256 requestId) public {
+        VerificationRequest storage request = s_verificationRequests[requestId];
+        require(!request.completed, "Verification already completed");
+        require(!request.rejected, "Verification already rejected");
+        require(
+            msg.sender == owner() || s_authorizedPartners[msg.sender],
+            "Caller is not authorized to reject"
+        );
+
+        request.rejected = true;
+
+        // Refund the verification 50% fee to the user
+        require(
+            i_trustyCoin.transfer(request.user, i_verificationFee / 2),
+            "Token refund failed"
+        );
+
+        emit VerificationRejected(requestId, request.user, msg.sender);
+    }
+
     function completeVerification(uint256 requestId) internal {
         VerificationRequest storage request = s_verificationRequests[requestId];
         require(!request.completed, "Verification already completed");
+        require(!request.rejected, "Verification was rejected");
         require(
             block.timestamp >= request.requestTime + TIME_LIMIT ||
                 request.authorizedPartnerValidated,
