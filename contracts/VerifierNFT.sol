@@ -7,6 +7,9 @@
 //5. The contract emits the VerificationValidatedByPartner event.
 //6. The contract checks if the request has been completed or if the time limit has been reached.
 //7. If the request is completed, the contract mints a new NFT and assigns it to the user.
+//8. If the request was verified by the authorized partner, the partner recieves 50% of the verificationFee.
+//9. If the request was not verified by the authorized partner, the contract owner recieves the full verificationFee.
+//10. If the request was not completed, the contract owner can reject the request and refund 50% of the verificationFee to the user.
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -17,6 +20,9 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+error VerifierNFT__AlreadyUnauthorizedPartner();
+error VerifierNFT__AlreadyAuthorizedPartner();
 
 /**
  * @title The VerifierNFT contract
@@ -34,7 +40,9 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         string tokenURI;
         uint256 requestTime;
         bool completed;
+        bool rejected;
         bool authorizedPartnerValidated;
+        address authorizedPartner;
     }
 
     // State variables
@@ -57,6 +65,11 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         uint256 requestId,
         address indexed partner
     );
+    event VerificationRejected(
+        uint256 requestId,
+        address indexed user,
+        address indexed partner
+    );
 
     // Modifiers
     modifier onlyAuthorizedPartner() {
@@ -77,10 +90,14 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
     }
 
     function addAuthorizedPartner(address partner) external onlyOwner {
+        if (s_authorizedPartners[partner])
+            revert VerifierNFT__AlreadyAuthorizedPartner();
         s_authorizedPartners[partner] = true;
     }
 
     function removeAuthorizedPartner(address partner) external onlyOwner {
+        if (!s_authorizedPartners[partner])
+            revert VerifierNFT__AlreadyUnauthorizedPartner();
         s_authorizedPartners[partner] = false;
     }
 
@@ -99,6 +116,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         for (uint256 i = 1; i <= s_requestCounter; i++) {
             if (
                 !s_verificationRequests[i].completed &&
+                !s_verificationRequests[i].rejected &&
                 (block.timestamp >=
                     s_verificationRequests[i].requestTime + TIME_LIMIT ||
                     s_verificationRequests[i].authorizedPartnerValidated)
@@ -123,7 +141,10 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         }
     }
 
-    function requestVerification(string memory tokenURI) public {
+    function requestVerification(
+        string memory tokenURI,
+        address authorizedPartner
+    ) public {
         require(
             i_trustyCoin.transferFrom(
                 msg.sender,
@@ -139,7 +160,9 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
             tokenURI: tokenURI,
             requestTime: block.timestamp,
             completed: false,
-            authorizedPartnerValidated: false
+            rejected: false,
+            authorizedPartnerValidated: false,
+            authorizedPartner: authorizedPartner
         });
 
         emit VerificationRequested(s_requestCounter, msg.sender);
@@ -149,13 +172,39 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         VerificationRequest storage request = s_verificationRequests[requestId];
         require(!request.completed, "Verification already completed");
         request.authorizedPartnerValidated = true;
+        request.authorizedPartner = msg.sender;
 
         emit VerificationValidatedByPartner(requestId, msg.sender);
+    }
+
+    function rejectVerification(uint256 requestId) public {
+        VerificationRequest storage request = s_verificationRequests[requestId];
+        require(!request.completed, "Verification already completed");
+        require(!request.rejected, "Verification already rejected");
+        require(
+            msg.sender == owner() || s_authorizedPartners[msg.sender],
+            "Caller is not authorized to reject"
+        );
+
+        request.rejected = true;
+
+        // Refund the verification 50% fee to the user
+        require(
+            i_trustyCoin.transfer(request.user, i_verificationFee / 2),
+            "Token refund failed"
+        );
+        require(
+            i_trustyCoin.transfer(owner(), i_verificationFee / 2),
+            "Token refund failed"
+        );
+
+        emit VerificationRejected(requestId, request.user, msg.sender);
     }
 
     function completeVerification(uint256 requestId) internal {
         VerificationRequest storage request = s_verificationRequests[requestId];
         require(!request.completed, "Verification already completed");
+        require(!request.rejected, "Verification was rejected");
         require(
             block.timestamp >= request.requestTime + TIME_LIMIT ||
                 request.authorizedPartnerValidated,
@@ -170,6 +219,26 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         request.completed = true;
 
         emit VerificationCompleted(requestId, request.user, newItemId);
+
+        // Transfer tokens to the authorized partner if the verification was validated by a partner
+        if (request.authorizedPartnerValidated) {
+            require(
+                i_trustyCoin.transfer(
+                    request.authorizedPartner,
+                    i_verificationFee / 2
+                ),
+                "Payment failed"
+            );
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee / 2),
+                "Payment failed"
+            );
+        } else {
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee),
+                "Payment failed"
+            );
+        }
     }
 
     //View/Pure functions
