@@ -24,6 +24,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 error VerifierNFT__AlreadyUnauthorizedPartner();
 error VerifierNFT__AlreadyAuthorizedPartner();
 error VerifierNFT__OnlyAuthorizedPartner();
+error VerifierNFT__TheRequestIsCompleted();
 
 /**
  * @title The VerifierNFT contract
@@ -169,7 +170,7 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
 
     function validateByPartner(uint256 requestId) public onlyAuthorizedPartner {
         VerificationRequest storage request = s_verificationRequests[requestId];
-        require(!request.completed, "Verification already completed");
+        if (request.completed) revert VerifierNFT__TheRequestIsCompleted();
         request.authorizedPartnerValidated = true;
         request.authorizedPartner = msg.sender;
 
