@@ -23,6 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 error VerifierNFT__AlreadyUnauthorizedPartner();
 error VerifierNFT__AlreadyAuthorizedPartner();
+error VerifierNFT__OnlyAuthorizedPartner();
 
 /**
  * @title The VerifierNFT contract
@@ -73,10 +74,8 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
 
     // Modifiers
     modifier onlyAuthorizedPartner() {
-        require(
-            s_authorizedPartners[msg.sender],
-            "Caller is not an authorized partner"
-        );
+        if (!s_authorizedPartners[msg.sender])
+            revert VerifierNFT__OnlyAuthorizedPartner();
         _;
     }
 
