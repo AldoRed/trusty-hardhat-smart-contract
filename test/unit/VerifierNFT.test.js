@@ -14,7 +14,8 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               verifierNFTByUser1,
               verifierNFTByUser2,
               trustCoinByUser2,
-              user2
+              user2,
+              timeLimit
 
           const chainId = network.config.chainId
           let verificationFee = networkConfig[chainId]["verificationFee"]
@@ -91,6 +92,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
           })
           describe("requestVerification", () => {
+              /* In this case it's unnecessary to verify if the argument of authorizedPartner 
+                 is an authorized partner because if it's not an authorized partner that 
+                 address will not be able to call the function to verify the request. */
               before(async () => {
                   verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
                   // Add user1 as authorized partner
@@ -105,13 +109,13 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
               })
               it("should request verification", async () => {
-                  console.log("verificationFee", verificationFee)
+                  //   console.log("verificationFee", verificationFee)
                   // Get balance of deployer
-                  console.log("balance of deployer", await trustCoin.balanceOf(deployer))
+                  //   console.log("balance of deployer", await trustCoin.balanceOf(deployer))
                   // Transfer tokens to user2
                   await trustCoin.transfer(user2, verificationFee)
                   // Get tokens from user2
-                  console.log("balance of user2", await trustCoinByUser2.balanceOf(user2))
+                  //   console.log("balance of user2", await trustCoinByUser2.balanceOf(user2))
 
                   // Allow to spend trustCoin
                   await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
@@ -120,7 +124,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   expect(verification[0]).to.equal(user2)
                   expect(verification[1]).to.equal("test")
                   // blockTimestamp
-                  console.log(verification[2].toString())
+                  //   console.log(verification[2].toString())
                   // completed request
                   expect(verification[3]).to.equal(false)
                   // rejected request
@@ -175,7 +179,55 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   */
 
-                  console.log("logs", logs[2].args)
+                  //console.log("logs", logs[2].args)
               })
+          })
+          describe("validateByPartner", () => {
+              before(async () => {
+                  verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
+                  verifierNFTByUser2 = await ethers.getContract("VerifierNFT", user2)
+                  trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
+              })
+              it("should able to do a verification request an authorizedPartnerValidated", async () => {
+                  // Request verification
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  // Validate verification request
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  const verification = await verifierNFT.getVerificationRequest(requestId)
+                  // authorizedPartnerValidated
+                  expect(verification[5]).to.equal(true)
+              })
+              it("should not able to do a verification request if not an authorized partner", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await expect(verifierNFTByUser2.validateByPartner(requestId)).to.be.rejectedWith(
+                      "VerifierNFT__OnlyAuthorizedPartner()"
+                  )
+              })
+              /* It should be better to do checkUpkeep test before to change the status of complete and try this test
+              it("should return an error if it's already completed the request", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  await expect(verifierNFTByUser1.validateByPartner(requestId)).to.be.rejectedWith(
+                      "VerifierNFT__TheRequestIsCompleted()"
+                  )
+              })*/
           })
       })
