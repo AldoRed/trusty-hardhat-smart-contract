@@ -14,6 +14,10 @@ An ERC20 contract representing the fungible token used to pay for verification r
 
 An ERC721 contract representing credential verifications as NFTs. This contract interacts with `TrustyCoin` for payment management and uses Chainlink Automation (formerly Chainlink Keepers) for automating verifications.
 
+### TrustyCoinSale
+
+A contract to buy `TrustyCoin`
+
 ## Installation
 
 1. Clone the repository:
