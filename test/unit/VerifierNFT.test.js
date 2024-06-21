@@ -187,6 +187,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
                   verifierNFTByUser2 = await ethers.getContract("VerifierNFT", user2)
                   trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
+                  timeLimit = await verifierNFT.getTimeLimit()
               })
               it("should able to do a verification request an authorizedPartnerValidated", async () => {
                   // Request verification
@@ -215,7 +216,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       "VerifierNFT__OnlyAuthorizedPartner()"
                   )
               })
-              /* It should be better to do checkUpkeep test before to change the status of complete and try this test
               it("should return an error if it's already completed the request", async () => {
                   await trustCoin.transfer(user2, verificationFee)
                   await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
@@ -224,10 +224,104 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   const args = txReceipt.logs[2].args
                   const requestId = args.requestId
 
-                  await verifierNFTByUser1.validateByPartner(requestId)
+                  await network.provider.send("evm_increaseTime", [Number(timeLimit) + 1])
+                  await network.provider.send("evm_mine")
+                  let checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  await verifierNFTByUser1.performUpkeep(checkUpkeep[1])
+
                   await expect(verifierNFTByUser1.validateByPartner(requestId)).to.be.rejectedWith(
                       "VerifierNFT__TheRequestIsCompleted()"
                   )
-              })*/
+              })
+          })
+          describe("checkUpkeep", () => {
+              before(async () => {
+                  verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
+                  verifierNFTByUser2 = await ethers.getContract("VerifierNFT", user2)
+                  trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
+                  timeLimit = await verifierNFT.getTimeLimit()
+              })
+              it("should return true if the request is validated by a partner\n\
+                and has not been rejected\n\
+                and has not been completed\n\
+                and has not passed more time than the timeLimit", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  const checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  expect(checkUpkeep[0]).to.equal(true)
+                  // We need to resolve the pending request to test the next test
+                  await verifierNFT.performUpkeep(checkUpkeep[1])
+                  let checkUpkeep2 = await verifierNFT.checkUpkeep("0x")
+                  expect(checkUpkeep2[0]).to.equal(false)
+
+                  // Here we can check that the request was completed with success
+                  // Check the status of the request
+                  const verification = await verifierNFT.getVerificationRequest(requestId)
+                  // completed request
+                  expect(verification[3]).to.equal(true)
+              })
+              it("should return true if the timeLimit has passed \n\
+                and has not been rejected\n\
+                and has not been completed\n\
+                and has not been validated by a partner", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  await txResponse.wait(1)
+
+                  // Increase time
+                  await network.provider.send("evm_increaseTime", [Number(timeLimit) + 1])
+                  await network.provider.send("evm_mine")
+
+                  const checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  expect(checkUpkeep[0]).to.equal(true)
+
+                  // We need to resolve the pending request to test the next test
+                  await verifierNFT.performUpkeep(checkUpkeep[1])
+                  let checkUpkeep2 = await verifierNFT.checkUpkeep("0x")
+                  expect(checkUpkeep2[0]).to.equal(false)
+              })
+              it("should return false if the request is validated by a partner\n\
+                but has been rejected", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  await verifierNFTByUser1.rejectVerification(requestId)
+                  const checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  expect(checkUpkeep[0]).to.equal(false)
+              })
+          })
+          describe("performUpkeep", () => {
+              before(async () => {
+                  verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
+                  verifierNFTByUser2 = await ethers.getContract("VerifierNFT", user2)
+                  trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
+              })
+              it("should complete the request", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  const checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  await verifierNFTByUser1.performUpkeep(checkUpkeep[1])
+                  const verification = await verifierNFT.getVerificationRequest(requestId)
+                  // completed request
+                  expect(verification[3]).to.equal(true)
+              })
           })
       })
