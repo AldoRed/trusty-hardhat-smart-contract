@@ -5,16 +5,15 @@ const { verify } = require("../utils/verify")
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
-    console.log(`Deploying VerifierNFT with account: ${deployer}`)
+    console.log(`Deploying TrustyCoinSale with account: ${deployer}`)
 
     const chainId = network.config.chainId
     const trustyCoinAddress = networkConfig[chainId]["trustyCoinAddress"]
+    const rate = networkConfig[chainId]["rate"]
 
-    const verificationFee = networkConfig[chainId]["verificationFee"]
+    const args = [trustyCoinAddress, rate]
 
-    const args = [trustyCoinAddress, verificationFee]
-
-    const verifierNFT = await deploy("VerifierNFT", {
+    const trustyCoinSale = await deploy("TrustyCoinSale", {
         from: deployer,
         args: args,
         log: true,
@@ -23,10 +22,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         //Verify
-        await verify(verifierNFT.address, args)
+        await verify(trustyCoinSale.address, args)
     }
 
     log("----------------------------------------")
 }
 
-module.exports.tags = ["all", "verifierNFT"]
+module.exports.tags = ["all", "trustyCoinSale"]

@@ -7,8 +7,9 @@ const networkConfig = {
         fundAmount: "1000000000000000000",
         automationUpdateInterval: "30",
         initialSupply: "100",
-        trustCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        trustyCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "1",
+        rate: "1000000000000000000",
     },
     31337: {
         name: "localhost",
@@ -19,8 +20,9 @@ const networkConfig = {
         automationUpdateInterval: "30",
         ethUsdPriceFeed: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
         initialSupply: "100",
-        trustCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        trustyCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "1",
+        rate: "1000000000000000000",
     },
     1: {
         name: "mainnet",
