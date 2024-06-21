@@ -323,5 +323,100 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   // completed request
                   expect(verification[3]).to.equal(true)
               })
+              it("should emit an event VerificationCompleted", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.validateByPartner(requestId)
+                  const checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  const txResponse2 = await verifierNFTByUser1.performUpkeep(checkUpkeep[1])
+                  const txReceipt2 = await txResponse2.wait(1)
+                  //const logs = txReceipt2.logs
+                  //console.log("logs", logs)
+
+                  await expect(txReceipt2).to.emit(verifierNFT, "VerificationCompleted")
+              })
+          })
+          describe("rejectVerification", () => {
+              before(async () => {
+                  verifierNFTByUser1 = await ethers.getContract("VerifierNFT", user1)
+                  verifierNFTByUser2 = await ethers.getContract("VerifierNFT", user2)
+                  trustCoinByUser2 = await ethers.getContract("TrustCoin", user2)
+              })
+              it("should reject the request", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.rejectVerification(requestId)
+                  const verification = await verifierNFT.getVerificationRequest(requestId)
+                  // rejected request
+                  expect(verification[4]).to.equal(true)
+              })
+              it("should not be able to reject the request if it's already completed", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await network.provider.send("evm_increaseTime", [Number(timeLimit) + 1])
+                  await network.provider.send("evm_mine")
+                  let checkUpkeep = await verifierNFTByUser1.checkUpkeep("0x")
+                  await verifierNFTByUser1.performUpkeep(checkUpkeep[1])
+
+                  await expect(verifierNFTByUser1.rejectVerification(requestId)).to.be.rejectedWith(
+                      "VerifierNFT__TheRequestIsCompleted()"
+                  )
+              })
+              it("should not be able to reject the request if it's already rejected", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await verifierNFTByUser1.rejectVerification(requestId)
+                  await expect(verifierNFTByUser1.rejectVerification(requestId)).to.be.rejectedWith(
+                      "VerifierNFT__TheRequestIsRejected()"
+                  )
+              })
+              it("should not be able to reject the request if it's not an authorized partner", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  await expect(verifierNFTByUser2.rejectVerification(requestId)).to.be.rejectedWith(
+                      "VerifierNFT__TheCallerIsNotAuthorizedToReject()"
+                  )
+              })
+              it("should emit an event VerificationRejected", async () => {
+                  await trustCoin.transfer(user2, verificationFee)
+                  await trustCoinByUser2.approve(verifierNFT.target, verificationFee)
+                  const txResponse = await verifierNFTByUser2.requestVerification("test", user1)
+                  const txReceipt = await txResponse.wait(1)
+                  const args = txReceipt.logs[2].args
+                  const requestId = args.requestId
+
+                  const txResponse2 = await verifierNFTByUser1.rejectVerification(requestId)
+                  const txReceipt2 = await txResponse2.wait(1)
+                  const logs = txReceipt2.logs
+
+                  await expect(txReceipt2)
+                      .to.emit(verifierNFT, "VerificationRejected")
+                      .withArgs(requestId, user2, user1)
+              })
           })
       })
