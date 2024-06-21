@@ -31,7 +31,21 @@ cd trusty-hardhat-smart-contract
 yarn
 ```
 
-3. Run Test:
+## Tests
+
 ```bash
 yarn hardhat test
 ```
+
+<center><img src="./img/trustyCoinTests.png"/></center>
+
+<center><img src="./img/verifierNFTTests.png"/></center>
+
+<center><img src="./img/trustyCoinSaleTests.png"/></center>
+
+## Coverage
+
+```bash
+yarn hardhat coverage
+```
+<center><img src="./img/coverage.png"/></center>
