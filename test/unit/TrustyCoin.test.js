@@ -12,7 +12,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               assert = chai.assert
               expect = chai.expect
               const accounts = await getNamedAccounts()
-              console.log(accounts)
+              //console.log(accounts)
               deployer = accounts.deployer
               user1 = accounts.user1
               user2 = accounts.user2
