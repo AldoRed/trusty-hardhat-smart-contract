@@ -9,7 +9,7 @@ const networkConfig = {
         initialSupply: "100",
         trustyCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "1",
-        rate: "1000000000000000000",
+        rate: "5",
     },
     31337: {
         name: "localhost",
@@ -22,7 +22,7 @@ const networkConfig = {
         initialSupply: "100",
         trustyCoinAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
         verificationFee: "1",
-        rate: "1000000000000000000",
+        rate: "5",
     },
     1: {
         name: "mainnet",
