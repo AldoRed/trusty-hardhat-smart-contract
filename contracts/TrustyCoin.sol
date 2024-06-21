@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @author Aldo Munoz
  * @notice ERC20 token for TrustCoin
  */
-contract TrustCoin is ERC20 {
-    constructor(uint256 initialSupply) ERC20("TrustCoin", "TCN") {
+contract TrustyCoin is ERC20 {
+    constructor(uint256 initialSupply) ERC20("TrustyCoin", "TCN") {
         _mint(msg.sender, (initialSupply * 10 ** decimals()));
     }
 }

@@ -3,8 +3,8 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
 !developmentChains.includes(network.name)
     ? describe.skip
-    : describe("TrustCoin", () => {
-          let trustCoin, initialSupply, deployer, user1, chai, assert, expect
+    : describe("TrustyCoin", () => {
+          let trustyCoin, initialSupply, deployer, user1, chai, assert, expect
           const multipler = 10 ** 18
 
           before(async () => {
@@ -21,39 +21,39 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               const chainId = network.config.chainId
               initialSupply = networkConfig[chainId]["initialSupply"]
 
-              trustCoin = await ethers.getContract("TrustCoin", deployer)
+              trustyCoin = await ethers.getContract("TrustyCoin", deployer)
           })
 
-          it("TrustCoin was deploy", async () => {
-              expect(trustCoin.target).to.properAddress
+          it("trustyCoin was deploy", async () => {
+              expect(trustyCoin.target).to.properAddress
           })
           describe("Constructor", () => {
               it("initializes the total supply", async () => {
-                  const totalSupply = await trustCoin.totalSupply()
+                  const totalSupply = await trustyCoin.totalSupply()
                   expect(totalSupply).to.equal((initialSupply * multipler).toString())
               })
               it("initializes the token with the correct name and symbol", async () => {
-                  const name = await trustCoin.name()
-                  const symbol = await trustCoin.symbol()
-                  expect(name).to.equal("TrustCoin")
+                  const name = await trustyCoin.name()
+                  const symbol = await trustyCoin.symbol()
+                  expect(name).to.equal("TrustyCoin")
                   expect(symbol).to.equal("TCN")
               })
           })
           describe("Mint", () => {
-              it("Should assign the initial supply of TrustCoin to the deployer", async () => {
-                  const deployerBalance = (await trustCoin.balanceOf(deployer)).toString()
+              it("Should assign the initial supply of trustyCoin to the deployer", async () => {
+                  const deployerBalance = (await trustyCoin.balanceOf(deployer)).toString()
                   expect(deployerBalance).to.equal((initialSupply * multipler).toString())
               })
           })
           describe("transfers", async () => {
               it("should be able to transfer tokens successfully to an address", async () => {
                   const tokensToSend = ethers.parseEther("1")
-                  await trustCoin.transfer(user1, tokensToSend)
-                  expect(await trustCoin.balanceOf(user1)).to.equal(tokensToSend)
+                  await trustyCoin.transfer(user1, tokensToSend)
+                  expect(await trustyCoin.balanceOf(user1)).to.equal(tokensToSend)
               })
               it("emits an transfer event, when an transfer occurs", async () => {
-                  await expect(trustCoin.transfer(user1, ethers.parseEther("1"))).to.emit(
-                      trustCoin,
+                  await expect(trustyCoin.transfer(user1, ethers.parseEther("1"))).to.emit(
+                      trustyCoin,
                       "Transfer"
                   )
               })
@@ -61,12 +61,12 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
           describe("allowances", async () => {
               const amount = (1 * multipler).toString()
               beforeEach(async () => {
-                  playerToken = await ethers.getContract("TrustCoin", user2)
+                  playerToken = await ethers.getContract("TrustyCoin", user2)
               })
               it("should approve other address to spend token", async () => {
                   const tokensToSpend = ethers.parseEther("5")
                   // Deployer is approving that user2 can spend 5 of their precious tokens
-                  await trustCoin.approve(user2, tokensToSpend)
+                  await trustyCoin.approve(user2, tokensToSpend)
                   await playerToken.transferFrom(deployer, user2, tokensToSpend)
                   expect(await playerToken.balanceOf(user2)).to.equal(tokensToSpend)
               })
@@ -76,14 +76,14 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   ).to.be.rejectedWith("ERC20: insufficient allowance")
               })
               it("emits an approval event, when an approval occurs", async () => {
-                  await expect(trustCoin.approve(user2, amount)).to.emit(trustCoin, "Approval")
+                  await expect(trustyCoin.approve(user2, amount)).to.emit(trustyCoin, "Approval")
               })
               it("the allowance being set is accurate", async () => {
-                  await trustCoin.approve(user2, amount)
-                  expect(await trustCoin.allowance(deployer, user2)).to.equal(amount)
+                  await trustyCoin.approve(user2, amount)
+                  expect(await trustyCoin.allowance(deployer, user2)).to.equal(amount)
               })
               it("won't allow a user to spend more than the approved amount", async () => {
-                  await trustCoin.approve(user2, amount)
+                  await trustyCoin.approve(user2, amount)
                   await expect(
                       playerToken.transferFrom(deployer, user2, (2 * multipler).toString())
                   ).to.be.rejectedWith("ERC20: insufficient allowance")

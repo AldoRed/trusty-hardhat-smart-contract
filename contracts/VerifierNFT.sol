@@ -25,6 +25,8 @@ error VerifierNFT__AlreadyUnauthorizedPartner();
 error VerifierNFT__AlreadyAuthorizedPartner();
 error VerifierNFT__OnlyAuthorizedPartner();
 error VerifierNFT__TheRequestIsCompleted();
+error VerifierNFT__TheRequestIsRejected();
+error VerifierNFT__TheCallerIsNotAuthorizedToReject();
 
 /**
  * @title The VerifierNFT contract
@@ -179,12 +181,10 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
 
     function rejectVerification(uint256 requestId) public {
         VerificationRequest storage request = s_verificationRequests[requestId];
-        require(!request.completed, "Verification already completed");
-        require(!request.rejected, "Verification already rejected");
-        require(
-            msg.sender == owner() || s_authorizedPartners[msg.sender],
-            "Caller is not authorized to reject"
-        );
+        if (request.completed) revert VerifierNFT__TheRequestIsCompleted();
+        if (request.rejected) revert VerifierNFT__TheRequestIsRejected();
+        if (msg.sender != owner() && !s_authorizedPartners[msg.sender])
+            revert VerifierNFT__TheCallerIsNotAuthorizedToReject();
 
         request.rejected = true;
 
