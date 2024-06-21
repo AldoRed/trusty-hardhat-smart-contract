@@ -49,3 +49,11 @@ yarn hardhat test
 yarn hardhat coverage
 ```
 <center><img src="./img/coverage.png"/></center>
+
+## Gas Report
+
+### USD/ETH
+<center><img src="./img/gasReport-usd-eth.png"/></center>
+
+### USD/MATIC
+<center><img src="./img/gasReport-usd-matic.png"/></center>
