@@ -419,4 +419,14 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       .withArgs(requestId, user2, user1)
               })
           })
+          describe("balanceOf", () => {
+              it("should return the balance of the user", async () => {
+                  const balance = await verifierNFT.balanceOf(user1)
+                  expect(balance).to.equal(0)
+              })
+              it("should return the balance of the user2 major than 0, because the tests before", async () => {
+                  const balance = await verifierNFT.balanceOf(user2)
+                  expect(balance).to.be.above(0)
+              })
+          })
       })
