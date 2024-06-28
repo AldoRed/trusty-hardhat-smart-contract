@@ -147,14 +147,26 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         string memory tokenURI,
         address authorizedPartner
     ) public {
-        require(
-            i_trustyCoin.transferFrom(
-                msg.sender,
-                address(this),
-                i_verificationFee
-            ),
-            "Payment failed"
-        );
+        if (authorizedPartner == address(0)) {
+            // This means that the user it's requesting the verification without an authorized partner
+            require(
+                i_trustyCoin.transferFrom(
+                    msg.sender,
+                    address(this),
+                    (i_verificationFee / 2)
+                ),
+                "Payment failed"
+            );
+        } else {
+            require(
+                i_trustyCoin.transferFrom(
+                    msg.sender,
+                    address(this),
+                    i_verificationFee
+                ),
+                "Payment failed"
+            );
+        }
 
         s_requestCounter++;
         s_verificationRequests[s_requestCounter] = VerificationRequest({
@@ -189,14 +201,28 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
         request.rejected = true;
 
         // Refund the verification 50% fee to the user
-        require(
-            i_trustyCoin.transfer(request.user, i_verificationFee / 2),
-            "Token refund failed"
-        );
-        require(
-            i_trustyCoin.transfer(owner(), i_verificationFee / 2),
-            "Token refund failed"
-        );
+        if (request.authorizedPartner != address(0)) {
+            require(
+                i_trustyCoin.transfer(request.user, i_verificationFee / 2),
+                "Token refund failed"
+            );
+            require(
+                i_trustyCoin.transfer(
+                    request.authorizedPartner,
+                    i_verificationFee / 2
+                ),
+                "Token refund failed"
+            );
+        } else {
+            require(
+                i_trustyCoin.transfer(request.user, i_verificationFee / 2),
+                "Token refund failed"
+            );
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee / 2),
+                "Token refund failed"
+            );
+        }
 
         emit VerificationRejected(requestId, request.user, msg.sender);
     }
@@ -233,7 +259,18 @@ contract VerifierNFT is ERC721URIStorage, AutomationCompatible, Ownable {
                 i_trustyCoin.transfer(owner(), i_verificationFee / 2),
                 "Payment failed"
             );
+        } else if (request.authorizedPartner != address(0)) {
+            // Refund the 50% of the verification fee to the user
+            require(
+                i_trustyCoin.transfer(request.user, i_verificationFee / 4),
+                "Payment failed"
+            );
+            require(
+                i_trustyCoin.transfer(owner(), i_verificationFee / 4),
+                "Payment failed"
+            );
         } else {
+            // Transfer the full verification fee to the contract owner
             require(
                 i_trustyCoin.transfer(owner(), i_verificationFee),
                 "Payment failed"
