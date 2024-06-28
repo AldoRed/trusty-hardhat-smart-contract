@@ -181,6 +181,38 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   //console.log("logs", logs[2].args)
               })
+              it("should the user pay the half of the verification fee if the user don't want a verification with a partner", async () => {
+                  // Transfer tokens to user2
+                  await trustyCoin.transfer(user2, verificationFee)
+                  const balanceBefore = await trustyCoin.balanceOf(user2)
+                  // Approve tokens to spend
+                  await trustyCoinByUser2.approve(verifierNFT.target, verificationFee)
+
+                  // Request verification passing the address of the partner as 0x
+                  await verifierNFTByUser2.requestVerification(
+                      "test half fee",
+                      "0x0000000000000000000000000000000000000000"
+                  )
+
+                  const balanceAfter = await trustyCoin.balanceOf(user2)
+                  const halfFee = Number(verificationFee) / 2
+                  expect((Number(balanceBefore) - halfFee).toString()).to.equal(balanceAfter)
+              })
+              it("should the user pay the full verification fee if the user want a verification with a partner", async () => {
+                  // Transfer tokens to user2
+                  await trustyCoin.transfer(user2, verificationFee)
+                  const balanceBefore = await trustyCoin.balanceOf(user2)
+                  // Approve tokens to spend
+                  await trustyCoinByUser2.approve(verifierNFT.target, verificationFee)
+
+                  // Request verification passing the address of the partner as 0x
+                  await verifierNFTByUser2.requestVerification("test full fee", user1)
+
+                  const balanceAfter = await trustyCoin.balanceOf(user2)
+                  expect((Number(balanceBefore) - Number(verificationFee)).toString()).to.equal(
+                      balanceAfter
+                  )
+              })
           })
           describe("validateByPartner", () => {
               before(async () => {
